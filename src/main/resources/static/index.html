@@ -1,0 +1,79 @@
+<body ng-app="app" ng-controller="MainController">
+<div ng-repeat="item in listMes">
+    <h3>{{item.title}}</h3>
+    <h4>{{item.body}}</h4>
+    <br/>
+</div>
+
+</body>
+
+<script src="https://cdn.bootcss.com/angular.js/1.5.6/angular.min.js"></script>
+<script src="https://cdn.bootcss.com/sockjs-client/1.1.4/sockjs.min.js"></script>
+<script src="https://cdn.bootcss.com/stomp.js/2.3.3/stomp.min.js"></script>
+<script type="text/javascript">
+
+
+    var stompClient = null;
+
+    var app = angular.module('app', []);
+    app.controller('MainController', function ($rootScope, $scope, $http) {
+        // ********************************************* data *********************************************
+        $scope.listMes = [];
+        // ********************************************* method *********************************************
+
+        $scope.connect = function () {
+            var socket = new SockJS('/my-websocket');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                stompClient.subscribe('/coinWorld/underReadMessage', function (req) {
+                    $scope.listMes = JSON.parse(req.body).listMes ;
+                    console.log($scope.listMes);
+                    for(var i=0;i<$scope.listMes.length;i++){
+                        $scope.notificationSend($scope.listMes[i].title,
+                            $scope.listMes[i].body,'/symbol.png',null);
+                    }
+                    $scope.$apply();
+                });
+            });
+        };
+        $scope.disconnect = function () {
+            if (stompClient != null) {
+                stompClient.disconnect();
+            }
+            $scope.data.connected = false;
+        }
+        $scope.send = function () {
+            stompClient.send("/app/send", {}, JSON.stringify({
+                'message': $scope.data.message
+            }));
+        }
+        $scope.valid = function () {
+            if (!window.Notification) {
+                alert("Your browser not support Notification!")
+            }
+        }
+        $scope.notification = function (title, msg, imagePath, onclick) {
+            if (Notification.permission == "granted") {
+                var notification = new Notification(title, {
+                    body: msg,
+                    icon: imagePath
+                });
+                notification.onclick = onclick;
+                return notification;
+            }
+        }
+        $scope.notificationSend = function (title, msg, imagePath, onclick) {
+            var notification = $scope.notification(title, msg, imagePath, function () {
+                notification.close();
+                onclick();
+            });
+        }
+
+        // ********************************************* init *********************************************
+        $scope.connect();
+        $scope.valid();
+
+    });
+
+
+</script>
