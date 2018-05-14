@@ -1,2 +1,2 @@
 # digitalCashTool
-There is digital cash toll.
+There is digital cash tool.
